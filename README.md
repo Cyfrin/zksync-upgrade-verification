@@ -59,6 +59,10 @@ forge build
 
 # Step-by-step Instructions - Before a proposal passes a vote 
 
+> Video Walkthrough
+
+[![Watch the video](./img/thumbnail.png)](https://youtu.be/m_2EUoN-uOc)
+
 ## 1. Read the proposal
 
 So first off, we want to read the proposal and understand what it's doing at a high level. We want to make sure that it's something people we trust are voting on, and something that someone we trust has proposed. 
@@ -147,7 +151,7 @@ Which, we can then map to the call parameters based on the struct:
     struct UpgradeProposal {
         Call[] calls;      // We only have 1 in the array, see the values above
         address executor;  // 0x0000000000000000000000000000000000000000
-        bytes32 salt;      // 0x0000000000000000000000000000000000000000
+        bytes32 salt;      // 0x0000000000000000000000000000000000000000000000000000000000000000
     }
 ```
 
