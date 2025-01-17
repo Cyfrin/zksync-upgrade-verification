@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.24;
 
+import {Test, console} from "forge-std/Test.sol";
 import {IProtocolUpgradeHandler} from "src/interfaces/IProtocolUpgradeHandler.sol";
 
 contract ZIP3Test {
@@ -80,5 +81,18 @@ contract ZIP3Test {
             });
         bytes32 id = keccak256(abi.encode(upgradeProposal));
         return id;
+    }
+}
+
+contract TestZip3 is Test {
+    ZIP3Test zip3;
+
+    function setUp() public {
+        zip3 = new ZIP3Test();
+    }
+
+    function testZip3Hash() public {
+        bytes32 hash = zip3.getHash();
+        console.logBytes32(hash);
     }
 }
