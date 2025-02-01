@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.24;
+pragma solidity ^0.8.3;
 
 /// @author Matter Labs
 /// @custom:security-contact security@matterlabs.dev
@@ -87,9 +87,7 @@ interface IProtocolUpgradeHandler {
 
     function execute(UpgradeProposal calldata _proposal) external payable;
 
-    function executeEmergencyUpgrade(
-        UpgradeProposal calldata _proposal
-    ) external payable;
+    function executeEmergencyUpgrade(UpgradeProposal calldata _proposal) external payable;
 
     function softFreeze() external;
 
@@ -111,26 +109,17 @@ interface IProtocolUpgradeHandler {
 
     function updateGuardians(address _newGuardians) external;
 
-    function updateEmergencyUpgradeBoard(
-        address _newEmergencyUpgradeBoard
-    ) external;
+    function updateEmergencyUpgradeBoard(address _newEmergencyUpgradeBoard) external;
 
     /// @notice Emitted when the security council address is changed.
-    event ChangeSecurityCouncil(
-        address indexed _securityCouncilBefore,
-        address indexed _securityCouncilAfter
-    );
+    event ChangeSecurityCouncil(address indexed _securityCouncilBefore, address indexed _securityCouncilAfter);
 
     /// @notice Emitted when the guardians address is changed.
-    event ChangeGuardians(
-        address indexed _guardiansBefore,
-        address indexed _guardiansAfter
-    );
+    event ChangeGuardians(address indexed _guardiansBefore, address indexed _guardiansAfter);
 
     /// @notice Emitted when the emergency upgrade board address is changed.
     event ChangeEmergencyUpgradeBoard(
-        address indexed _emergencyUpgradeBoardBefore,
-        address indexed _emergencyUpgradeBoardAfter
+        address indexed _emergencyUpgradeBoardBefore, address indexed _emergencyUpgradeBoardAfter
     );
 
     /// @notice Emitted when upgrade process on L1 is started.
