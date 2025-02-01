@@ -73,7 +73,7 @@ contract ZIPTest_eth_1 {
     }
 }
 
-contract TestZIPEth_1 is Test {
+contract ZIP3Test is Test {
     ZIPTest_eth_1 zip;
 
     function setUp() public {
