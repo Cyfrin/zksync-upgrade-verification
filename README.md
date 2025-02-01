@@ -2,6 +2,10 @@
 
 What does the security council need to verify?
 
+> Video Walkthrough
+
+[![Watch the video](./img/tool-thumbnail.png)](https://www.youtube.com/watch?v=c9Gv2XdxMq8)
+
 ## Pre-vote
 1. Pre-vote
    1. Make sure the proposal makes sense 
@@ -20,7 +24,7 @@ You can run any of these.
 
 ```bash
 # ZIP-4 get all the calls based off the proposal transaction
-zkgov_check get_upgrades 0x5e7ef52948f372de0a64c19e76a30313f2b6b1e4b4b63791eb0fcac68a565604 --rpc-url $ZKSYNC_RPC_URL
+zkgov_check get_upgrades 0x50e420474a6967eaac87813fe6479e98ae8d380fd9b3ae78bc4fedc443d9dec1 --rpc-url $ZKSYNC_RPC_URL
 # ZIP-3 get the ZKsync proposal ID based off the transaction
 zkgov_check get_zk_id 0x50e420474a6967eaac87813fe6479e98ae8d380fd9b3ae78bc4fedc443d9dec1 --rpc-url $ZKSYNC_RPC_URL
 # ZIP-4 get the final ETH proposal ID based off the ZKsync proposal hash
