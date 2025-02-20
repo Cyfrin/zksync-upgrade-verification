@@ -18,7 +18,7 @@ fi
 
 # Default values
 # Set the terminal formatting constants.
-readonly VERSION="0.0.1"
+readonly VERSION="0.0.4"
 readonly GREEN="\e[32m"
 readonly RED="\e[31m"
 readonly UNDERLINE="\e[4m"
