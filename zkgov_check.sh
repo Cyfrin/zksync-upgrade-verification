@@ -188,27 +188,21 @@ get_upgrades() {
 # Function to decode and format calldata
 decode_and_print_calldata() {
     local calldata="$1"
-    local padding="${2:-}"  # Default to empty string if no padding provided
+    local padding="${2:-}"
     local decoded_output
-
+    
     # Get the decoded output from cast
     decoded_output=$(cast 4byte-decode $(echo "$calldata" | xargs))
-
-    # Extract the function signature (first line)
-    local signature=$(echo "$decoded_output" | head -n1 | sed 's/^1) "//' | sed 's/"$//')
-    printf "\n${padding}Decoded Calldata:\n" 
-    echo "${padding}${signature}"
     
-    # Extract the parameters (everything in parentheses after the first line)
-    local params=$(echo "$decoded_output" | tail -n1 | sed 's/^(//' | sed 's/)$//')
+    printf "${padding}Decoded Calldata:\n" 
+    echo "${padding}$decoded_output"
+    # # Print the function signature (first line, removing the '1) ' prefix and quotes)
+    # printf "${padding}$decoded_output" | head -n1 | sed 's/^1) "//' | sed 's/"$//'
     
-    # Split the parameters by comma and format them
-    IFS=',' read -ra param_array <<< "$params"
-    for param in "${param_array[@]}"; do
-        # Clean up the parameter and add padding
-        cleaned_param=$(echo "$param" | sed 's/^\s*//' | sed 's/\[.*\]//')
-        print_parameter "${padding} - ${cleaned_param}"
-    done
+    # # Print all remaining lines, adding the padding and dash
+    # echo "$decoded_output" | tail -n +2 | while read -r param; do
+    #     print_parameter "${padding}- ${param}"
+    # done
 }
 
 # Command: get_eth_id
