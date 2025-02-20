@@ -42,6 +42,7 @@ Commands:
 Options:
     -h, --help     Show this help message
     -v, --version  Show version information
+    --decode       Decode calldata for each transaction (on get_upgrades)
     --rpc-url URL  RPC URL for zkSync Era (can also be set via ZKSYNC_RPC_URL env var)
     --governor     Governor contract address (optional)
 
