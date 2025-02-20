@@ -78,6 +78,7 @@ get_upgrades() {
     local tx_hash="$1"
     local rpc_url="$2"
     local governor="$3"
+    local decode_flag="$4"
     
     # Get transaction data
     local tx_data=$(cast tx "$tx_hash" --rpc-url "$rpc_url" --json)
@@ -160,6 +161,9 @@ get_upgrades() {
                         value=$(echo "$value" | sed 's/\[.*\]//' | xargs)
                         print_field "    Value" "$value"
                         print_field "    Calldata" "$calldata"
+                        if [ "$decode_flag" = true ]; then
+                            decode_and_print_calldata "$calldata" "    "
+                        fi
                         
                         # Remove processed operation
                         ops_part="${ops_part#*\)}"
@@ -173,10 +177,39 @@ get_upgrades() {
             printf "\n"
             print_field "Executor" "$executor"
             print_field "Salt" "$salt"
+        else 
+            if [ "$decode_flag" = true ]; then
+                decode_and_print_calldata "$calldata"
+            fi
         fi
     done
 }
 
+# Function to decode and format calldata
+decode_and_print_calldata() {
+    local calldata="$1"
+    local padding="${2:-}"  # Default to empty string if no padding provided
+    local decoded_output
+
+    # Get the decoded output from cast
+    decoded_output=$(cast 4byte-decode $(echo "$calldata" | xargs))
+
+    # Extract the function signature (first line)
+    local signature=$(echo "$decoded_output" | head -n1 | sed 's/^1) "//' | sed 's/"$//')
+    printf "\n${padding}Decoded Calldata:\n" 
+    echo "${padding}${signature}"
+    
+    # Extract the parameters (everything in parentheses after the first line)
+    local params=$(echo "$decoded_output" | tail -n1 | sed 's/^(//' | sed 's/)$//')
+    
+    # Split the parameters by comma and format them
+    IFS=',' read -ra param_array <<< "$params"
+    for param in "${param_array[@]}"; do
+        # Clean up the parameter and add padding
+        cleaned_param=$(echo "$param" | sed 's/^\s*//' | sed 's/\[.*\]//')
+        print_parameter "${padding} - ${cleaned_param}"
+    done
+}
 
 # Command: get_eth_id
 get_eth_id() {
@@ -344,15 +377,14 @@ echo ""  # extra newline separator
 
 }
 
-
-
-
 main() {
     # Show help if no arguments provided
     if [ $# -eq 0 ]; then
         print_help
         exit 0
     fi
+
+    local decode_flag=false
 
     # Parse command line arguments
     while [ $# -gt 0 ]; do
@@ -383,6 +415,10 @@ main() {
                 rpc_url="$2"
                 shift 2
                 ;;
+            --decode)
+                decode_flag=true
+                shift 1
+                ;;
             --governor)
                 if [ -z "$2" ]; then
                     echo "Error: Missing address after --governor"
@@ -406,7 +442,7 @@ main() {
     done
 
     # Set default values
-    local rpc_url="${ZKSYNC_RPC_URL:-}"
+    local rpc_url="${rpc_url:-${ZKSYNC_RPC_URL:-}}"
     local governor="${governor:-$DEFAULT_GOVERNOR}"
 
     # Check if command is set
@@ -427,7 +463,7 @@ main() {
             get_zk_id "$tx_hash" "$rpc_url" "$governor"
             ;;
         get_upgrades)
-            get_upgrades "$tx_hash" "$rpc_url" "$governor"
+            get_upgrades "$tx_hash" "$rpc_url" "$governor" "$decode_flag"
             ;;
         get_eth_id)
             get_eth_id "$tx_hash" "$rpc_url" "$governor"
@@ -451,6 +487,11 @@ print_header() {
         # Fallback for terminals without formatting support.
         printf "\n%s\n" "> $header:"
     fi
+}
+
+print_parameter(){
+    local value=$1
+    printf "${GREEN}%s${RESET}\n" "$value"
 }
 
 # Utility function to print a labelled value.
