@@ -196,13 +196,6 @@ decode_and_print_calldata() {
     
     printf "${padding}Decoded Calldata:\n" 
     echo "${padding}$decoded_output"
-    # # Print the function signature (first line, removing the '1) ' prefix and quotes)
-    # printf "${padding}$decoded_output" | head -n1 | sed 's/^1) "//' | sed 's/"$//'
-    
-    # # Print all remaining lines, adding the padding and dash
-    # echo "$decoded_output" | tail -n +2 | while read -r param; do
-    #     print_parameter "${padding}- ${param}"
-    # done
 }
 
 # Command: get_eth_id
