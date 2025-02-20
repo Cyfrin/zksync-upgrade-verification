@@ -18,7 +18,7 @@ fi
 
 # Default values
 # Set the terminal formatting constants.
-readonly VERSION="0.0.4"
+readonly VERSION="0.0.5"
 readonly GREEN="\e[32m"
 readonly RED="\e[31m"
 readonly UNDERLINE="\e[4m"
@@ -193,7 +193,7 @@ decode_and_print_calldata() {
     local decoded_output
     
     # Get the decoded output from cast
-    decoded_output=$(cast 4byte-decode $(echo "$calldata" | xargs))
+    decoded_output=$(cast 4byte-decode $(echo "$calldata" | xargs)) || true
     
     printf "${padding}Decoded Calldata:\n" 
     echo "${padding}$decoded_output"
