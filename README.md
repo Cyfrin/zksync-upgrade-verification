@@ -6,7 +6,7 @@ What does the security council need to verify?
 
 [![Watch the video](./img/tool-thumbnail.png)](https://www.youtube.com/watch?v=c9Gv2XdxMq8)
 
-## Pre-vote
+## Security council responsibilities
 1. Pre-vote
    1. Make sure the proposal makes sense 
       1. Is it audited? Does it need to be? By whom?
