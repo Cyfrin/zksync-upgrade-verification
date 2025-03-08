@@ -1,0 +1,31 @@
+{
+    "executor": "0xECE8e30bFc92c2A8e11e6cb2e17B70868572E3f6",
+    "salt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "calls": [
+        {
+            "target": "0x303a465b659cbb0ab36ee643ea362c509eeb5213",
+            "value": "0x00",
+            "data": "0x79ba5097"
+        },
+        {
+            "target": "0xc2ee6b6af7d616f6e27ce7f4a451aedc2b0f5f5c",
+            "value": "0x00",
+            "data": "0x79ba5097"
+        },
+        {
+            "target": "0xd7f9f54194c633f36ccd5f3da84ad4a1c38cb2cb",
+            "value": "0x00",
+            "data": "0x79ba5097"
+        },
+        {
+            "target": "0x5d8ba173dc6c3c90c8f7c04c9288bef5fdbad06e",
+            "value": "0x00",
+            "data": "0x79ba5097"
+        },
+        {
+            "target": "0xf553e6d903aa43420ed7e3bc2313be9286a8f987",
+            "value": "0x00",
+            "data": "0x79ba5097"
+        }
+    ]
+}
