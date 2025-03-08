@@ -40,15 +40,18 @@ Commands:
     get_eth_id    Get the Ethereum proposal ID from a transaction hash [Not implemented]
 
 Options:
-    -h, --help     Show this help message
-    -v, --version  Show version information
-    --decode       Decode calldata for each transaction (on get_upgrades)
-    --rpc-url URL  RPC URL for zkSync Era (can also be set via ZKSYNC_RPC_URL env var)
-    --governor     Governor contract address (optional)
+    -h, --help           Show this help message
+    -v, --version        Show version information
+    --show-solidity      Show Solidity contracts for verification (on get_eth_id)
+    --decode             Decode calldata for each transaction (on get_upgrades)
+    --rpc-url URL        RPC URL for zkSync Era (can also be set via ZKSYNC_RPC_URL env var)
+    --governor           Governor contract address (optional)
 
 Examples:
     ${0##*/} get_upgrades 0x123... --rpc-url https://mainnet.era.zksync.io
     ${0##*/} get_zk_id 0x123... --rpc-url \$ZKSYNC_RPC_URL
+    ${0##*/} get_eth_id 0x123... --rpc-url \$ZKSYNC_RPC_URL --show-solidity
+    ${0##*/} get_eth_id_from_file proposal.json
 EOF
 }
 
@@ -210,6 +213,7 @@ get_eth_id() {
     local tx_hash="$1"
     local rpc_url="$2"
     local governor="$3"
+    local show_solidity="$4"
 
     # Get transaction data and decode the proposal calldata.
     local tx_data
@@ -270,8 +274,11 @@ get_eth_id() {
                 continue
             fi
 
+            # Reconstruct the calls array in a format suitable for abi-encode
+            local calls_array=""
             local call_index=0
             local contract_calls_sol=""
+            
             # Process each operation in the operations array.
             while [[ "$ops_part" == *"("* ]]; do
                 local op_content="${ops_part#*(}"
@@ -282,14 +289,25 @@ get_eth_id() {
                     op_value=$(echo "$op_value" | xargs)
                     op_value="${op_value%% *}"
                     op_calldata=$(echo "$op_calldata" | xargs)
-                    call_index=$((call_index + 1))
-                    # Remove the "0x" prefix for Solidity's hex literal syntax.
-                    local op_calldata_hex="${op_calldata#0x}"
-                    contract_calls_sol+=$'\n'"    IProtocolUpgradeHandler.Call call${call_index} = IProtocolUpgradeHandler.Call({"
-                    contract_calls_sol+=$'\n'"        target: ${op_target},"
-                    contract_calls_sol+=$'\n'"        value: ${op_value},"
-                    contract_calls_sol+=$'\n'"        data: hex\"${op_calldata_hex}\""
-                    contract_calls_sol+=$'\n'"    });"
+                    
+                    # Add this call to the calls array for direct calculation
+                    if [[ -n "$calls_array" ]]; then
+                        calls_array+=","
+                    fi
+                    calls_array+="($op_target,$op_value,$op_calldata)"
+                    
+                    # For Solidity code generation
+                    if [[ "$show_solidity" == "true" ]]; then
+                        call_index=$((call_index + 1))
+                        # Remove the "0x" prefix for Solidity's hex literal syntax.
+                        local op_calldata_hex="${op_calldata#0x}"
+                        contract_calls_sol+=$'\n'"    IProtocolUpgradeHandler.Call call${call_index} = IProtocolUpgradeHandler.Call({"
+                        contract_calls_sol+=$'\n'"        target: ${op_target},"
+                        contract_calls_sol+=$'\n'"        value: ${op_value},"
+                        contract_calls_sol+=$'\n'"        data: hex\"${op_calldata_hex}\""
+                        contract_calls_sol+=$'\n'"    });"
+                    fi
+                    
                     # Remove the processed operation (and any following comma+space).
                     ops_part="${ops_part#*)}"
                     ops_part="${ops_part#, }"
@@ -297,10 +315,22 @@ get_eth_id() {
                     break
                 fi
             done
-
-# (Inside the loop for each ETH transaction, after processing its operations.)
-# Now output the complete Solidity contract for this ETH transaction.
-cat <<EOF
+            
+            # Construct the final UpgradeProposal and calculate the hash
+            local proposal="([$calls_array],$executor,$salt)"
+            local encoded_proposal
+            encoded_proposal=$(cast abi-encode "UpgradeProposal(((address,uint256,bytes)[],address,bytes32))" "$proposal")
+            local proposal_id
+            proposal_id=$(cast keccak "$encoded_proposal")
+            
+            # Always show the proposal ID directly
+            echo "Ethereum proposal ID #$eth_tx_counter: $proposal_id"
+            
+            # If show_solidity is true, also generate and output the Solidity contract
+            if [[ "$show_solidity" == "true" ]]; then
+                # (Inside the loop for each ETH transaction, after processing its operations.)
+                # Now output the complete Solidity contract for this ETH transaction.
+                cat <<EOF
 
 
 /*//////////////////////////////////////////////////////////////
@@ -319,11 +349,11 @@ ${contract_calls_sol}
 
     constructor() {
 EOF
-    local j
-    for (( j = 1; j <= call_index; j++ )); do
-        echo "        calls.push(call${j});"
-    done
-cat <<EOF
+                local j
+                for (( j = 1; j <= call_index; j++ )); do
+                    echo "        calls.push(call${j});"
+                done
+                cat <<EOF
     }
 
     function getHash() public view returns (bytes32) {
@@ -337,8 +367,8 @@ cat <<EOF
 }
 EOF
 
-# Append the test contract at the end of the file.
-cat <<EOF
+                # Append the test contract at the end of the file.
+                cat <<EOF
 contract TestZIPEth_${eth_tx_counter} is Test {
     ZIPTest_eth_${eth_tx_counter} zip;
 
@@ -353,8 +383,8 @@ contract TestZIPEth_${eth_tx_counter} is Test {
 }
 EOF
 
-echo ""  # extra newline separator
-
+                echo ""  # extra newline separator
+            fi
         fi
     done
 
@@ -363,12 +393,75 @@ echo ""  # extra newline separator
         exit 1
     fi
 
-    if [ "$eth_tx_counter" -gt 0 ]; then
+    if [[ "$eth_tx_counter" -gt 0 && "$show_solidity" == "true" ]]; then
         echo "Total ETH transactions (and therefore, contracts): ${eth_tx_counter}"
-        echo "Please copy paste the contract you're looking for the signature for into the test folder, and run the main test with:"
-        echo "  forge test --mt getHash --mc (contract_name) -vv"
+        echo "The proposal IDs have been calculated directly above."
+        echo "If you'd like to verify via Solidity, copy paste the contract you're looking for into the test folder, and run:"
+        echo "  forge test --mt testZIPEthProposalId --mc TestZIPEth_* -vv"
     fi
+}
 
+get_eth_id_from_file() {
+    local file_path="$1"
+    
+    # Check if file exists
+    if [ ! -f "$file_path" ]; then
+        echo "Error: File not found: $file_path"
+        exit 1
+    fi
+    
+    # Check if jq is installed
+    if ! command -v jq &> /dev/null; then
+        echo "Error: jq is required but not installed. Please install jq to parse JSON files."
+        exit 1
+    fi
+    
+    # Parse the JSON file
+    local executor
+    executor=$(jq -r '.executor' "$file_path")
+    
+    local salt
+    salt=$(jq -r '.salt' "$file_path")
+    
+    # Extract the array of calls
+    local calls_array=""
+    local calls_count
+    calls_count=$(jq '.calls | length' "$file_path")
+    
+    for (( i = 0; i < calls_count; i++ )); do
+        local target
+        target=$(jq -r ".calls[$i].target" "$file_path")
+        
+        local value
+        value=$(jq -r ".calls[$i].value" "$file_path")
+        # If value is in hex format, convert to decimal
+        if [[ "$value" == 0x* ]]; then
+            value=$(cast --to-dec "$value")
+        fi
+        
+        local data
+        data=$(jq -r ".calls[$i].data" "$file_path")
+        
+        # Add this call to the calls array
+        if [[ -n "$calls_array" ]]; then
+            calls_array+=","
+        fi
+        calls_array+="($target,$value,$data)"
+    done
+    
+    # Construct the final UpgradeProposal
+    local proposal="([$calls_array],$executor,$salt)"
+    
+    # Encode the UpgradeProposal struct and compute its keccak256 hash
+    local encoded_proposal
+    encoded_proposal=$(cast abi-encode "UpgradeProposal(((address,uint256,bytes)[],address,bytes32))" "$proposal")
+    local proposal_id
+    proposal_id=$(cast keccak "$encoded_proposal")
+    
+    # Print the result
+    print_header "Ethereum Proposal ID"
+    print_field "Proposal ID" "$proposal_id"
+    print_field "Encoded Proposal" "$encoded_proposal"
 }
 
 main() {
@@ -379,6 +472,7 @@ main() {
     fi
 
     local decode_flag=false
+    local show_solidity=false
 
     # Parse command line arguments
     while [ $# -gt 0 ]; do
@@ -401,6 +495,16 @@ main() {
                 tx_hash="$2"
                 shift 2
                 ;;
+            get_eth_id_from_file)
+                command="$1"
+                if [ -z "$2" ]; then
+                    echo "Error: Missing file path for command '$1'"
+                    print_help
+                    exit 1
+                fi
+                file_path="$2"
+                shift 2
+                ;;
             --rpc-url)
                 if [ -z "$2" ]; then
                     echo "Error: Missing URL after --rpc-url"
@@ -411,6 +515,10 @@ main() {
                 ;;
             --decode)
                 decode_flag=true
+                shift 1
+                ;;
+            --show-solidity)
+                show_solidity=true
                 shift 1
                 ;;
             --governor)
@@ -460,8 +568,11 @@ main() {
             get_upgrades "$tx_hash" "$rpc_url" "$governor" "$decode_flag"
             ;;
         get_eth_id)
-            get_eth_id "$tx_hash" "$rpc_url" "$governor"
+            get_eth_id "$tx_hash" "$rpc_url" "$governor" "$show_solidity"
             exit 1
+            ;;
+        get_eth_id_from_file)
+            get_eth_id_from_file "$file_path"
             ;;
         *)
             echo "Error: Unknown command: $command"
