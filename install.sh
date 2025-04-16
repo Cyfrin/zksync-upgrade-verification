@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-echo "Installing zkgov_check..."
+echo "Installing zkgov-check..."
 
 BASE_DIR="${XDG_CONFIG_HOME:-$HOME}"
 CYFRIN_DIR="${CYFRIN_DIR:-"$BASE_DIR/.cyfrin"}"
 CYFRIN_BIN_DIR="$CYFRIN_DIR/bin"
 
-ZKGOV_CHECK_URL="https://raw.githubusercontent.com/cyfrin/zksync-upgrade-verification/main/zkgov_check.sh"
-BIN_PATH="$CYFRIN_BIN_DIR/zkgov_check"
+ZKGOV_CHECK_URL="https://raw.githubusercontent.com/cyfrin/zksync-upgrade-verification/main/zkgov-check.sh"
+BIN_PATH="$CYFRIN_BIN_DIR/zkgov-check"
 
 # Create the .cyfrin bin directory and binary if it doesn't exist.
 mkdir -p "$CYFRIN_BIN_DIR"
@@ -34,7 +34,7 @@ case $SHELL in
     PREF_SHELL=ash
     ;;
 *)
-    echo "zkgov_check: could not detect shell, manually add ${CYFRIN_BIN_DIR} to your PATH."
+    echo "zkgov-check: could not detect shell, manually add ${CYFRIN_BIN_DIR} to your PATH."
     exit 1
 esac
 
@@ -66,9 +66,9 @@ if [[ ${#MISSING_TOOLS[@]} -ne 0 ]]; then
     for tool in "${MISSING_TOOLS[@]}"; do
         echo "  - $tool"
     done
-    echo -e "\nPlease install them to use zkgov_check properly."
+    echo -e "\nPlease install them to use zkgov-check properly."
 fi
 
-echo -e "\nDetected your preferred shell is ${PREF_SHELL} and added zkgov_check to PATH."
-echo "Run 'source ${PROFILE}' or start a new terminal session to use zkgov_check."
-echo -e "\nThen you can run 'zkgov_check --help' to see available options."
+echo -e "\nDetected your preferred shell is ${PREF_SHELL} and added zkgov-check to PATH."
+echo "Run 'source ${PROFILE}' or start a new terminal session to use zkgov-check."
+echo -e "\nThen you can run 'zkgov-check --help' to see available options."
