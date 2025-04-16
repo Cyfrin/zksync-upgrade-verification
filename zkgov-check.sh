@@ -18,14 +18,15 @@ fi
 
 # Default values
 # Set the terminal formatting constants.
-readonly VERSION="0.0.7"
+readonly VERSION="0.1.0"
 readonly GREEN="\e[32m"
 readonly RED="\e[31m"
 readonly UNDERLINE="\e[4m"
 readonly BOLD="\e[1m"
 readonly RESET="\e[0m"
-readonly DEFAULT_GOVERNOR="0x76705327e682F2d96943280D99464Ab61219e34f"
+readonly DEFAULT_GOVERNOR="0x76705327e682F2d96943280D99464Ab61219e34f" # This is the Era L2 governance contract
 readonly PROPOSAL_CREATED_TOPIC="0x7d84a6263ae0d98d3329bd7b46bb4e8d6f98cd35a7adb45c274c8b7fd5ebd5e0"
+readonly DEFAULT_MAILBOX="0x32400084C286CF3E17e7B677ea9583e60a000324" # This is the ETH L1 mailbox contract for sending messages to L2
 
 print_help() {
     cat << EOF
@@ -35,23 +36,24 @@ Usage:
     ${0##*/} [options] <command> <tx_hash> [--rpc-url URL] [--governor ADDRESS]
 
 Commands:
-    get_zk_id     Get the zkSync proposal ID from a transaction hash
-    get_upgrades  Get the upgrade details from a transaction hash
-    get_eth_id    Get the Ethereum proposal ID from a transaction hash [Not implemented]
+    get-zk-id     Get the zkSync proposal ID from a transaction hash
+    get-upgrades  Get the upgrade details from a transaction hash
+    get-eth-id    Get the Ethereum proposal ID from a transaction hash [Not implemented]
 
 Options:
     -h, --help           Show this help message
     -v, --version        Show version information
-    --show-solidity      Show Solidity contracts for verification (on get_eth_id)
-    --decode             Decode calldata for each transaction (on get_upgrades)
+    --show-solidity      Show Solidity contracts for verification (on get-eth-id)
+    --decode             Decode calldata for each transaction (on get-upgrades)
     --rpc-url URL        RPC URL for zkSync Era (can also be set via ZKSYNC_RPC_URL env var)
     --governor           Governor contract address (optional)
+    --from-file FILE     Read proposal from JSON file (for get-eth-id or get-upgrades command)
 
 Examples:
-    ${0##*/} get_upgrades 0x123... --rpc-url https://mainnet.era.zksync.io
-    ${0##*/} get_zk_id 0x123... --rpc-url \$ZKSYNC_RPC_URL
-    ${0##*/} get_eth_id 0x123... --rpc-url \$ZKSYNC_RPC_URL --show-solidity
-    ${0##*/} get_eth_id_from_file proposal.json
+    ${0##*/} get-upgrades 0x123... --rpc-url https://mainnet.era.zksync.io
+    ${0##*/} get-zk-id 0x123... --rpc-url \$ZKSYNC_RPC_URL
+    ${0##*/} get-eth-id 0x123... --rpc-url \$ZKSYNC_RPC_URL --show-solidity
+    ${0##*/} get-eth-id --from-file proposal.json
 EOF
 }
 
@@ -59,7 +61,7 @@ print_version() {
     echo "${0##*/} version ${VERSION}"
 }
 
-# Command: get_zk_id
+# Command: get-zk-id
 get_zk_id() {
     local tx_hash="$1"
     local rpc_url="$2"
@@ -77,7 +79,7 @@ get_zk_id() {
     print_field "Decimal" $proposal_id_dec
 }
 
-# Command: get_upgrades
+# Command: get-upgrades
 get_upgrades() {
     local tx_hash="$1"
     local rpc_url="$2"
@@ -121,7 +123,7 @@ get_upgrades() {
         print_field "Calldata" "$calldata"
         
         # Check if this is an ETH transaction
-        if [[ "$target" == "0x0000000000000000000000000000000000008008" ]] && [[ "$calldata" == 0x62f84b24* ]]; then
+        if [[ "$target" == "0x0000000000000000000000000000000000008008" ]] && [[ "$calldata" == 0x62f84b24* ]]; then # This is the "sendToL1" function
             if [[ -t 1 ]] && tput sgr0 >/dev/null 2>&1; then
                 printf "${BOLD}(ETH transaction)${RESET}\n"
             else
@@ -214,7 +216,16 @@ get_eth_id() {
     local rpc_url="$2"
     local governor="$3"
     local show_solidity="$4"
+    local from_file="$5"
+    
+    if [[ -n "$from_file" ]]; then
+        process_eth_id_from_file "$from_file"
+    else
+        process_eth_id_from_tx "$tx_hash" "$rpc_url" "$governor" "$show_solidity"
+    fi
+}
 
+process_eth_id_from_tx() {
     # Get transaction data and decode the proposal calldata.
     local tx_data
     tx_data=$(cast tx "$tx_hash" --rpc-url "$rpc_url" --json)
@@ -401,7 +412,7 @@ EOF
     fi
 }
 
-get_eth_id_from_file() {
+process_eth_id_from_file() {
     local file_path="$1"
     
     # Check if file exists
@@ -418,10 +429,18 @@ get_eth_id_from_file() {
     
     # Parse the JSON file
     local executor
-    executor=$(jq -r '.executor' "$file_path")
-    
+    executor=$(jq -r '.executor // empty' "$file_path")
+    # If executor is null or empty, use the zero address
+    if [[ -z "$executor" ]]; then
+        executor="0x0000000000000000000000000000000000000000"
+    fi
+
     local salt
-    salt=$(jq -r '.salt' "$file_path")
+    salt=$(jq -r '.salt // empty' "$file_path")
+    # If salt is null or empty, use the zero bytes32
+    if [[ -z "$salt" ]]; then
+        salt="0x0000000000000000000000000000000000000000000000000000000000000000"
+    fi
     
     # Extract the array of calls
     local calls_array=""
@@ -473,6 +492,9 @@ main() {
 
     local decode_flag=false
     local show_solidity=false
+    local from_file=false
+    local command=""
+    local tx_hash=""
 
     # Parse command line arguments
     while [ $# -gt 0 ]; do
@@ -485,7 +507,7 @@ main() {
                 print_version
                 exit 0
                 ;;
-            get_zk_id|get_upgrades|get_eth_id)
+            get-zk-id|get-upgrades)
                 command="$1"
                 if [ -z "$2" ]; then
                     echo "Error: Missing transaction hash for command '$1'"
@@ -495,15 +517,22 @@ main() {
                 tx_hash="$2"
                 shift 2
                 ;;
-            get_eth_id_from_file)
+            get-eth-id)
                 command="$1"
-                if [ -z "$2" ]; then
-                    echo "Error: Missing file path for command '$1'"
-                    print_help
-                    exit 1
+                # For get-eth-id, we'll either expect a transaction hash or --from-file later
+                if [[ "$2" == "--"* ]]; then
+                    # If the next argument is an option (starts with --), just record the command
+                    shift 1
+                else
+                    # Otherwise, it's likely a transaction hash
+                    if [ -z "$2" ]; then
+                        echo "Error: Missing transaction hash or --from-file option for command '$1'"
+                        print_help
+                        exit 1
+                    fi
+                    tx_hash="$2"
+                    shift 2
                 fi
-                file_path="$2"
-                shift 2
                 ;;
             --rpc-url)
                 if [ -z "$2" ]; then
@@ -529,14 +558,22 @@ main() {
                 governor="$2"
                 shift 2
                 ;;
-            *)
-                if [ -z "$command" ]; then
-                    echo "Error: Unknown command or option: $1"
-                    print_help
+            --from-file)
+                if [ -z "$2" ]; then
+                    echo "Error: Missing file path after --from-file"
                     exit 1
+                fi
+                from_file=true
+                file_path="$2"
+                shift 2
+                ;;
+            *)
+               # If this could be a transaction hash or file path (for the command that expects it)
+                if [[ "$1" == 0x* || -f "$1" ]] && [ -z "$tx_hash" ] && [ -z "$file_path" ]; then
+                    tx_hash="$1"
+                    shift
                 else
-                    echo "Error: Unknown option: $1"
-                    print_help
+                    echo "Error: Unknown option or invalid argument: $1"
                     exit 1
                 fi
                 ;;
@@ -559,20 +596,58 @@ main() {
         exit 1
     fi
 
+    # Validate arguments based on command
+    case "$command" in
+        get-zk-id|get-upgrades)
+            if [ -z "$tx_hash" ]; then
+                echo "Error: Missing transaction hash for command '$command'"
+                print_help
+                exit 1
+            fi
+            
+            # Check if RPC URL is set
+            if [ -z "${rpc_url}" ]; then
+                echo "Error: No RPC URL provided. Either use --rpc-url or set ZKSYNC_RPC_URL environment variable"
+                exit 1
+            fi
+            ;;
+        get-eth-id)
+            if [ "$from_file" = true ]; then
+                if [ -z "$file_path" ]; then
+                    echo "Error: Missing file path for --from-file option"
+                    print_help
+                    exit 1
+                fi
+            else
+                if [ -z "$tx_hash" ]; then
+                    echo "Error: Missing transaction hash for command '$command'"
+                    print_help
+                    exit 1
+                fi
+                
+                # Check if RPC URL is set when using transaction hash
+                if [ -z "${rpc_url}" ]; then
+                    echo "Error: No RPC URL provided. Either use --rpc-url or set ZKSYNC_RPC_URL environment variable"
+                    exit 1
+                fi
+            fi
+            ;;
+    esac
+
     # Main command router
     case "$command" in
-        get_zk_id)
+        get-zk-id)
             get_zk_id "$tx_hash" "$rpc_url" "$governor"
             ;;
-        get_upgrades)
+        get-upgrades)
             get_upgrades "$tx_hash" "$rpc_url" "$governor" "$decode_flag"
             ;;
-        get_eth_id)
-            get_eth_id "$tx_hash" "$rpc_url" "$governor" "$show_solidity"
-            exit 1
-            ;;
-        get_eth_id_from_file)
-            get_eth_id_from_file "$file_path"
+        get-eth-id)
+            if [ "$from_file" = true ]; then
+                get_eth_id "" "$rpc_url" "$governor" "$show_solidity" "$file_path"
+            else
+                get_eth_id "$tx_hash" "$rpc_url" "$governor" "$show_solidity" ""
+            fi
             ;;
         *)
             echo "Error: Unknown command: $command"
