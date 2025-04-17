@@ -32,7 +32,7 @@ zkgov-check get-eth-id 0x50e420474a6967eaac87813fe6479e98ae8d380fd9b3ae78bc4fedc
 # ZIP-4 get the final ETH proposal ID based off the ZKsync proposal hash, and all the calls in a solidity contract format
 zkgov-check get-eth-id 0x50e420474a6967eaac87813fe6479e98ae8d380fd9b3ae78bc4fedc443d9dec1 --rpc-url $ZKSYNC_RPC_URL --show-solidity
 # ZIP-5 get the final ETH proposal ID based off an input JSON object
-zkgov-check get-eth-id-from-file sample-proposal.json
+zkgov-check get-eth-id --from-file sample-proposal.json
 ```
 
 # Getting Started 
