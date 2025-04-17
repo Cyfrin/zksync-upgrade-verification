@@ -77,7 +77,7 @@ Take a proposal like [ZIP-4](https://www.tally.xyz/gov/zksync/proposal/101504078
 Get the transaction, and make sure the Tally UI matches with:
 
 ```bash
-zkgov_check get_zk_id 0x5e7ef52948f372de0a64c19e76a30313f2b6b1e4b4b63791eb0fcac68a565604 --rpc-url $ZKSYNC_RPC_URL
+zkgov-check get-zk-id 0x5e7ef52948f372de0a64c19e76a30313f2b6b1e4b4b63791eb0fcac68a565604 --rpc-url $ZKSYNC_RPC_URL
 ```
 
 You'll get:
@@ -94,7 +94,7 @@ And the `Decimal` is correct.
 A DAO proposal is a list of targets, values, and calldatas. We should verify what targets we are calling with what calldata. There are special cases, when we call `sendToL1(bytes)`. When we do this, we are likely performing an Upgrade. An Upgrade can consist of many targets, values, and calldatas themselves, so we want to check those out. You can see the exhaustive list of ZKsync transactions (and, if they call `sendToL1`, the corresponding Ethereum transactions) with:
 
 ```bash
-zkgov_check get_zk_id 0x50e420474a6967eaac87813fe6479e98ae8d380fd9b3ae78bc4fedc443d9dec1 --rpc-url $ZKSYNC_RPC_URL
+zkgov-check get-zk-id 0x50e420474a6967eaac87813fe6479e98ae8d380fd9b3ae78bc4fedc443d9dec1 --rpc-url $ZKSYNC_RPC_URL
 ```
 
 This will give an output like:
@@ -124,7 +124,7 @@ Salt: 0x0000000000000000000000000000000000000000000000000000000000000000
 The proposal ID on Ethereum is different from the one on ZKsync, but we can generate it and make sure it's the same one by hashing the values the same way we do on Ethereum. As of today this is a two step process, because I am coding at 1 in the morning. If someone wants to make this a one step process, please make a PR!
 
 ```
-zkgov_check get_eth_id 0x5e7ef52948f372de0a64c19e76a30313f2b6b1e4b4b63791eb0fcac68a565604 --rpc-url $ZKSYNC_RPC_URL
+zkgov-check get-eth-id 0x5e7ef52948f372de0a64c19e76a30313f2b6b1e4b4b63791eb0fcac68a565604 --rpc-url $ZKSYNC_RPC_URL
 ```
 
 This will give an output like:
@@ -235,7 +235,7 @@ You can also get the proposal ID from a file. The file should look like:
 And you can run:
 
 ```
-zkgov_check get_eth_id_from_file sample-proposal.json
+zkgov-check get-eth-id --from-file sample-proposal.json
 ```
 
 To get:
