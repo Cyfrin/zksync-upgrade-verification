@@ -16,3 +16,6 @@ docs/
 notes.md
 
 .DS_Store
+
+emergency-upgrades/
+lib/
