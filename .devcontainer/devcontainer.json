@@ -1,0 +1,43 @@
+{
+    // DevContainer for zkSync Era Governance Tool
+    "name": "zkSync Era Governance Tool DevContainer",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "..",
+    },
+    // Use tmpfs for unmounted VM scenario
+    "workspaceMount": "type=tmpfs,target=/workspace",
+    "workspaceFolder": "/workspace",
+    // Features to add to the dev container
+    "features": {},
+    // Configure tool-specific properties
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/usr/bin/zsh"
+                    }
+                }
+            }
+        }
+    },
+    // Run commands after the container is created
+    "postCreateCommand": "echo 'zkSync Era Governance Tool DevContainer ready. Stack size limit set to 65536 KB for handling long arguments.'",
+    // Run arguments for the container
+    "runArgs": [
+        // Increase stack size limit
+        "--ulimit",
+        "stack=67108864:67108864"
+    ],
+    // Mounts for the container
+    "mounts": [
+        // Mount the script directory if needed
+        // "source=${localWorkspaceFolder}/scripts,target=/scripts,type=bind,consistency=cached"
+    ],
+    // Forward ports if needed for RPC connections
+    // "forwardPorts": [8545],
+    // User to run as
+    "remoteUser": "vscode"
+}

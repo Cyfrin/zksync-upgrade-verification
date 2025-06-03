@@ -6,6 +6,34 @@ What does the security council need to verify?
 
 [![Watch the video](./img/tool-thumbnail.png)](https://www.youtube.com/watch?v=c9Gv2XdxMq8)
 
+
+# Table of Contents
+
+- [ZKsync Upgrade Verification](#zksync-upgrade-verification)
+- [Table of Contents](#table-of-contents)
+  - [Security council responsibilities](#security-council-responsibilities)
+- [Tool - Examples](#tool---examples)
+- [Getting Started](#getting-started)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+    - [Curl](#curl)
+    - [Source](#source)
+    - [Devcontainer](#devcontainer)
+      - [Devcontainer Prerequisites](#devcontainer-prerequisites)
+      - [Devcontainer Setup](#devcontainer-setup)
+    - [Docker](#docker)
+      - [Prerequisites](#prerequisites)
+- [Quickstart](#quickstart)
+  - [Getting a proposal ID from a transaction](#getting-a-proposal-id-from-a-transaction)
+  - [Getting the list of ZKsync and Ethereum transactions](#getting-the-list-of-zksync-and-ethereum-transactions)
+  - [Verify the ETH proposal ID](#verify-the-eth-proposal-id)
+- [Get proposal ID from a file](#get-proposal-id-from-a-file)
+- [Trust Assumptions](#trust-assumptions)
+- [Signature Verification](#signature-verification)
+- [Testing](#testing)
+- [Thank you!](#thank-you)
+
+
 ## Security council responsibilities
 1. Pre-vote
    1. Make sure the proposal makes sense 
@@ -62,6 +90,75 @@ You can run scripts directly from this repository.
 ```bash
 git clone https://github.com/Cyfrin/zksync-upgrade-verification
 cd zksync-upgrade-verification
+```
+
+### Devcontainer
+
+#### Devcontainer Prerequisites
+
+- [Docker](https://www.docker.com/get-started)
+- [Visual Studio Code](https://code.visualstudio.com/)
+- [Dev Containers Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+#### Devcontainer Setup
+
+1. Clone this repo
+
+```bash
+git clone https://github.com/Cyfrin/zksync-upgrade-verification
+cd zksync-upgrade-verification
+code .  # Opens VSCode
+```
+
+2. Make sure docker is running
+
+3. Open the Command Palette (Ctrl+Shift+P or Cmd+Shift+P on macOS)
+
+Run this:
+
+```console
+Dev Containers: Reopen in Container
+```
+
+4. Wait for the container to build and start, then run:
+
+```bash
+zkgov-check --help
+```
+
+### Docker 
+
+#### Prerequisites
+
+- [Docker](https://www.docker.com/get-started)
+
+1. Build the container
+
+```bash
+git clone https://github.com/Cyfrin/zksync-upgrade-verification
+cd zksync-upgrade-verification
+
+# Build the Docker image
+docker build -f .devcontainer/Dockerfile -t zkgov-tool .
+```
+
+2. Run the container
+
+```
+# Interactive mode with increased stack size
+docker run -it --rm \
+  --ulimit stack=67108864:67108864 \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  -e ZKSYNC_RPC_URL="https://mainnet.era.zksync.io" \
+  zkgov-tool \
+  /bin/zsh
+```
+
+3. Run the command
+
+```bash
+zkgov-check.sh --help
 ```
 
 # Quickstart
