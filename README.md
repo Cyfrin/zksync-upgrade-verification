@@ -90,6 +90,7 @@ You can run scripts directly from this repository.
 ```bash
 git clone https://github.com/Cyfrin/zksync-upgrade-verification
 cd zksync-upgrade-verification
+./zkgov-check.sh --help
 ```
 
 ### Devcontainer
@@ -123,7 +124,7 @@ Dev Containers: Reopen in Container
 4. Wait for the container to build and start, then run:
 
 ```bash
-zkgov-check.sh --help
+zkgov-check --help
 ```
 
 ### Docker 
@@ -158,7 +159,7 @@ docker run -it --rm \
 3. Run the command
 
 ```bash
-zkgov-check.sh --help
+zkgov-check --help
 ```
 
 # Quickstart
