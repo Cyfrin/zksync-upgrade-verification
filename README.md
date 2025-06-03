@@ -15,6 +15,7 @@ What does the security council need to verify?
 - [Tool - Examples](#tool---examples)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
+    - [Optional Requirements](#optional-requirements)
   - [Installation](#installation)
     - [Curl](#curl)
     - [Source](#source)
@@ -67,11 +68,19 @@ zkgov-check get-eth-id --from-file sample-proposal.json
 
 ## Requirements
 
+*Note: these requirements are if you install it via curl or source*
+
 - [foundry (`cast` and `chisel` in particular)](https://getfoundry.sh/)
   - You'll know you did it right if you can run `cast --version` and you see a response like `cast 0.3.0 (41c6653 2025-01-15T00:25:27.680061000Z`
 - [bash](https://www.gnu.org/software/bash/)
   - You'll know you have it if you run `bash --version` and see a response like `GNU bash, version 5....`
 - `ZKSYNC_RPC_URL` environment variable - a connection to a ZKsync Era Node
+
+### Optional Requirements
+
+If you have a linux machine, there is currently a limit on the max size of an argument that can be passed to a bash script (see [this foundry issue](https://github.com/foundry-rs/foundry/issues/5069)). To get around this, you'll also need the `uv` python package manager installed.
+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ## Installation
 

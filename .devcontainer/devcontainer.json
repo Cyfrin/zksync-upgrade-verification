@@ -3,7 +3,7 @@
     "name": "zkSync Era Governance Tool DevContainer",
     "build": {
         "dockerfile": "Dockerfile",
-        "context": "..",
+        "context": ".."
     },
     // Use tmpfs for unmounted VM scenario
     "workspaceMount": "type=tmpfs,target=/workspace",
@@ -24,7 +24,7 @@
         }
     },
     // Run commands after the container is created
-    "postCreateCommand": "echo 'zkSync Era Governance Tool DevContainer ready. Stack size limit set to 65536 KB for handling long arguments.'",
+    "postCreateCommand": "",
     // Run arguments for the container
     "runArgs": [
         // Increase stack size limit

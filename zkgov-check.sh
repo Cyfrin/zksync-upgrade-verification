@@ -79,6 +79,82 @@ get_zk_id() {
     print_field "Decimal" $proposal_id_dec
 }
 
+decode_with_fallback() {
+    local signature="$1"
+    local data="$2"
+    local decoded_data
+    
+    # Try cast first
+    if decoded_data=$(cast calldata-decode "$signature" "$data" 2>&1); then
+        # Success - return the decoded data
+        echo "$decoded_data"
+        return 0
+    else
+        # Check if it's the "Argument list too long" error
+        if [[ "$decoded_data" == *"Argument list too long"* ]]; then
+            # Use uv with Python fallback
+            if command -v uv >/dev/null 2>&1; then
+                # Create Python decoder script if it doesn't exist
+                local decoder_script="/tmp/decode_calldata_$$.py"
+                cat > "$decoder_script" << 'EOF'
+import sys
+import json
+from eth_abi import decode
+
+# Read hex from file
+with open(sys.argv[1], 'r') as f:
+    hex_data = f.read().strip()
+
+# Remove 0x and function selector (first 8 chars after 0x)
+if hex_data.startswith('0x'):
+    hex_data = hex_data[2:]
+# Function selector is 4 bytes = 8 hex chars
+data_hex = hex_data[8:]
+bytes_data = bytes.fromhex(data_hex)
+
+# Decode based on signature
+signature = sys.argv[2]
+if "propose(address[],uint256[],bytes[],string)" in signature:
+    types = ['address[]', 'uint256[]', 'bytes[]', 'string']
+    decoded = decode(types, bytes_data)
+    
+    # Format output similar to cast
+    addresses = ["0x" + addr.hex() if isinstance(addr, bytes) else addr for addr in decoded[0]]
+    print("[" + ", ".join(addresses) + "]")
+    print("[" + ", ".join(str(d) for d in decoded[1]) + "]")
+    print("[" + ", ".join("0x" + d.hex() for d in decoded[2]) + "]")
+    print(decoded[3])
+else:
+    print(f"Error: Unsupported signature: {signature}")
+    sys.exit(1)
+EOF
+                
+                # Write data to file and decode with uv
+                local data_file="/tmp/large_calldata_$$.hex"
+                echo "$data" > "$data_file"
+                
+                if uv run --no-project --with eth-abi "$decoder_script" "$data_file" "$signature"; then
+                    rm -f "$data_file" "$decoder_script"
+                    return 0
+                else
+                    echo "Error: Python decoder failed" >&2
+                    rm -f "$data_file" "$decoder_script"
+                    return 1
+                fi
+            else
+                echo "Error: Argument list too long and uv not available for fallback" >&2
+                echo "Install uv from https://github.com/astral-sh/uv" >&2
+                return 1
+            fi
+        else
+            # Some other error - display it
+            echo "$decoded_data" >&2
+            return 1
+        fi
+    fi
+}
+
+
 # Command: get-upgrades
 get_upgrades() {
     local tx_hash="$1"
@@ -92,8 +168,9 @@ get_upgrades() {
     local to_address=$(echo "$tx_data" | jq -r '.to')
     
     # Decode the propose call
-    local decoded_data=$(cast calldata-decode "propose(address[],uint256[],bytes[],string)" "$input_data")
-    
+    # local decoded_data=$(cast calldata-decode "propose(address[],uint256[],bytes[],string)" "$input_data")
+    local decoded_data=$(decode_with_fallback "propose(address[],uint256[],bytes[],string)" "$input_data")
+
     # Extract arrays using sed and convert to arrays
     # Remove brackets and get first line
     local targets_string=$(echo "$decoded_data" | sed -n '1s/^\[\(.*\)\]/\1/p')

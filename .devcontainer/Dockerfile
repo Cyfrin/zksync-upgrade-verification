@@ -14,9 +14,16 @@ RUN apt-get update && apt-get install -y \
 # Set the default shell to zsh
 ENV SHELL=/usr/bin/zsh
 
+# Install uv and add to PATH
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install Python using uv as root
+RUN uv python install 3.11
+
 # Set default stack size limit in the container
 RUN echo "ulimit -s 65536" >> /etc/profile && \
-    echo "ulimit -s 65536" >> /etc/zsh/zshenv
+    echo "ulimit -s 65536" >> /etc/zsh/zshenv && \
+    echo "ulimit -s 65536" >> /etc/bash.bashrc
 
 # Running everything under zsh
 SHELL ["/usr/bin/zsh", "-c"]
@@ -64,6 +71,8 @@ RUN echo 'export PATH="/home/vscode/.foundry/bin:$PATH"' >> ~/.zshrc
 # Add scripts directory to PATH for easy access
 ENV PATH="/home/vscode/scripts:$PATH"
 RUN echo 'export PATH="/home/vscode/scripts:$PATH"' >> ~/.zshrc
+
+RUN uv python install 3.12
 
 # Set working directory
 WORKDIR /workspace
