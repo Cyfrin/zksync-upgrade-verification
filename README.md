@@ -123,7 +123,7 @@ Dev Containers: Reopen in Container
 4. Wait for the container to build and start, then run:
 
 ```bash
-zkgov-check --help
+zkgov-check.sh --help
 ```
 
 ### Docker 
