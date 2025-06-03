@@ -25,10 +25,10 @@ SHELL ["/usr/bin/zsh", "-c"]
 RUN mkdir -p /home/vscode/scripts
 
 # Copy the zkSync governance tool script as root
-COPY zkgov-check.sh /home/vscode/scripts/zkgov-check.sh
+COPY zkgov-check.sh /home/vscode/scripts/zkgov-check
 
 # Make the script executable and change ownership to vscode user
-RUN chmod +x /home/vscode/scripts/zkgov-check.sh && \
+RUN chmod +x /home/vscode/scripts/zkgov-check && \
     chown -R vscode:vscode /home/vscode/scripts
 
 # Dropping privileges
