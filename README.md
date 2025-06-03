@@ -78,7 +78,7 @@ zkgov-check get-eth-id --from-file sample-proposal.json
 
 ### Optional Requirements
 
-If you have a linux machine, there is currently a limit on the max size of an argument that can be passed to a bash script (see [this foundry issue](https://github.com/foundry-rs/foundry/issues/5069)). To get around this, you'll also need the `uv` python package manager installed.
+If you have a linux machine, there is currently a limit on the max size of an argument that can be passed to a bash script (see [this foundry issue](https://github.com/foundry-rs/foundry/issues/5069)). To get around this, if you're passing a massive amount of calldata to be decoded, you'll also need the `uv` python package manager installed.
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
