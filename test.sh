@@ -112,6 +112,37 @@ test_get_eth_id() {
     fi
 }
 
+# Test get-upgrades with multisig execTransaction (ZIP-14)
+test_get_upgrades_multisig() {
+    echo "Testing get-upgrades with multisig transaction..."
+
+    local tx_hash="0xbdf91e5b92893ed6d8609ef2e1bf12f953aed1b994317e493bd789470afab62f"
+
+    # Run the command and capture both stdout and stderr
+    local output=$(./zkgov-check.sh get-upgrades "$tx_hash" --rpc-url "$ZKSYNC_RPC_URL" 2>&1)
+
+    # Check if multisig detection message is present
+    if echo "$output" | grep -q "Multisig Transaction Detected"; then
+        print_test_result "get-upgrades Multisig Detection" 0
+    else
+        print_test_result "get-upgrades Multisig Detection" 1 "Multisig Transaction Detected header not found"
+    fi
+
+    # Check if execTransaction parameters are displayed
+    if echo "$output" | grep -q "SafeTxGas"; then
+        print_test_result "get-upgrades Multisig Parameters" 0
+    else
+        print_test_result "get-upgrades Multisig Parameters" 1 "execTransaction parameters not found"
+    fi
+
+    # Check if the inner propose call is still processed
+    if echo "$output" | grep -q "ZKsync Transactions"; then
+        print_test_result "get-upgrades Multisig Inner Propose" 0
+    else
+        print_test_result "get-upgrades Multisig Inner Propose" 1 "Inner propose call not processed"
+    fi
+}
+
 # Test get-eth-id with --from-file option (ZIP-5)
 test_get_eth_id_from_file() {
     echo "Testing get-eth-id with --from-file option..."
@@ -165,6 +196,8 @@ run_all_tests() {
     test_get_zk_id
     echo "----------------------------------------"
     test_get_upgrades
+    echo "----------------------------------------"
+    test_get_upgrades_multisig
     echo "----------------------------------------"
     test_get_eth_id
     echo "----------------------------------------"

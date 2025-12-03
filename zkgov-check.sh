@@ -18,7 +18,7 @@ fi
 
 # Default values
 # Set the terminal formatting constants.
-readonly VERSION="0.1.1"
+readonly VERSION="0.1.2"
 readonly GREEN="\e[32m"
 readonly RED="\e[31m"
 readonly UNDERLINE="\e[4m"
@@ -155,6 +155,52 @@ EOF
 }
 
 
+# Function to detect and unwrap multisig execTransaction
+# Returns the inner calldata if it's a multisig tx, otherwise returns the original input
+# Note: User-facing output goes to stderr so it doesn't interfere with the return value
+unwrap_multisig() {
+    local input_data="$1"
+
+    # Check if this is a multisig execTransaction (selector 0x6a761202)
+    if [[ "$input_data" == 0x6a761202* ]]; then
+        print_header "Multisig Transaction Detected" >&2
+        printf "This transaction is wrapped in a Safe execTransaction call.\n\n" >&2
+
+        # Decode execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
+        local exec_decoded=$(cast calldata-decode "execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)" "$input_data")
+
+        # Display all execTransaction parameters
+        local exec_to=$(echo "$exec_decoded" | sed -n '1p')
+        local exec_value=$(echo "$exec_decoded" | sed -n '2p')
+        local exec_data=$(echo "$exec_decoded" | sed -n '3p')
+        local exec_operation=$(echo "$exec_decoded" | sed -n '4p')
+        local exec_safeTxGas=$(echo "$exec_decoded" | sed -n '5p')
+        local exec_baseGas=$(echo "$exec_decoded" | sed -n '6p')
+        local exec_gasPrice=$(echo "$exec_decoded" | sed -n '7p')
+        local exec_gasToken=$(echo "$exec_decoded" | sed -n '8p')
+        local exec_refundReceiver=$(echo "$exec_decoded" | sed -n '9p')
+        local exec_signatures=$(echo "$exec_decoded" | sed -n '10p')
+
+        print_field "To" "$exec_to" >&2
+        print_field "Value" "$exec_value" >&2
+        print_field "Data" "$exec_data" >&2
+        print_field "Operation" "$exec_operation" >&2
+        print_field "SafeTxGas" "$exec_safeTxGas" >&2
+        print_field "BaseGas" "$exec_baseGas" >&2
+        print_field "GasPrice" "$exec_gasPrice" >&2
+        print_field "GasToken" "$exec_gasToken" >&2
+        print_field "RefundReceiver" "$exec_refundReceiver" >&2
+        print_field "Signatures" "$exec_signatures" >&2
+        printf "\n" >&2
+
+        # Return the inner data (3rd param) to stdout
+        echo "$exec_data"
+    else
+        # Return original input unchanged
+        echo "$input_data"
+    fi
+}
+
 # Command: get-upgrades
 get_upgrades() {
     local tx_hash="$1"
@@ -166,9 +212,11 @@ get_upgrades() {
     local tx_data=$(cast tx "$tx_hash" --rpc-url "$rpc_url" --json)
     local input_data=$(echo "$tx_data" | jq -r '.input')
     local to_address=$(echo "$tx_data" | jq -r '.to')
-    
+
+    # Check for and unwrap multisig transaction
+    input_data=$(unwrap_multisig "$input_data")
+
     # Decode the propose call
-    # local decoded_data=$(cast calldata-decode "propose(address[],uint256[],bytes[],string)" "$input_data")
     local decoded_data=$(decode_with_fallback "propose(address[],uint256[],bytes[],string)" "$input_data")
 
     # Extract arrays using sed and convert to arrays
