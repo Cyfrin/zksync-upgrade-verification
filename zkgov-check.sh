@@ -356,6 +356,10 @@ process_eth_id_from_tx() {
     tx_data=$(cast tx "$tx_hash" --rpc-url "$rpc_url" --json)
     local input_data
     input_data=$(echo "$tx_data" | jq -r '.input')
+
+    # Check for and unwrap multisig transaction
+    input_data=$(unwrap_multisig "$input_data")
+
     local decoded_data
     decoded_data=$(cast calldata-decode "propose(address[],uint256[],bytes[],string)" "$input_data")
 
